@@ -1,0 +1,48 @@
+## Overview: School of Informatics, Walailak University
+The School of Informatics at Walailak University is a leading academic institution in Thailand dedicated to the fields of information technology, digital media, and communication. The school is recognized for its "High-Tech, High-Touch" approach, combining advanced technical infrastructure with a focus on practical, real-world applications. It aims to produce "Smart Graduates" who are ready to lead the global digital economy.
+------------------------------
+## 1. Undergraduate Programs: What You Will Study
+The school offers 5 distinct Bachelor’s degree programs. Each curriculum is designed to meet specific industry needs:
+
+* Intelligent Information Technology (IIT)
+* Focus: Artificial Intelligence and Software Engineering.
+   * What you learn: You will dive deep into AI development, Machine Learning, and Big Data Analytics. The program covers how to build intelligent software, cloud computing solutions, and cybersecurity systems to protect digital assets. It is ideal for those who want to become Data Scientists or AI Engineers.
+* Interactive Multimedia, Animation, and Games (IMAG)
+* Focus: Digital Entertainment and Creative Technology.
+   * What you learn: This program blends art and technology. You will study 3D Modeling, character animation, and Game Development using industry-standard engines like Unity and Unreal. You also explore Virtual Reality (VR) and Augmented Reality (AR) to create immersive digital worlds.
+* Digital Content and Media (DCM)
+* Focus: Information Management and Creative Content.
+   * What you learn: You will study the lifecycle of digital information—from Content Creation (graphics, video, and web) to Digital Archiving and information architecture. It teaches you how to organize large amounts of digital data and present it effectively to users through various digital platforms.
+* Digital Communication Arts (CommArts)
+* Focus: Modern Media and Strategic Communication.
+   * What you learn: This is a digital-first approach to mass media. You will learn Digital Storytelling, online broadcasting, and Social Media Analytics. The course covers video production, digital PR, and media entrepreneurship, preparing you to be a content creator or a digital media manager.
+* Digital Medical Technology (DTM)
+* Focus: Healthcare Innovation and IT.
+   * What you learn: A specialized program focusing on Health Informatics. You will learn how to apply IT to the medical field, such as managing Electronic Health Records (EHR), developing medical imaging software, and using AI for clinical decision support.
+
+------------------------------
+## 2. Graduate Programs (Master’s & Doctoral)
+
+* Information Technology Management (MIT) - International Program: Focuses on high-level IT strategy, governance, and digital transformation for leadership roles.
+* Artificial Intelligence and Digital Media Innovation (AIM): A research-intensive program focusing on the development of new AI technologies and innovative digital media tools.
+
+------------------------------
+## 3. Student Admissions (Academic Year 2026)## Undergraduate Level (TCAS69)
+
+   1. Round 1: Portfolio (Oct 2025 – Jan 2026): For students with outstanding projects or activities in IT/Media.
+   2. Round 2: Quota (Mar – Apr 2026): For students in the 14 southern provinces or those from partner schools.
+   3. Round 3: Admission (May 2026): Centralized national selection based on standardized test scores.
+   4. Round 4: Direct Admission (Late May – Jun 2026): Direct application to the university for remaining seats.
+
+## Graduate Level
+
+* Application Period: Open until May 15, 2026.
+* Scholarships: Walailak University offers generous Full Scholarships (tuition + stipend) and Tuition Waivers for high-potential researchers in both Master's and Ph.D. programs.
+
+------------------------------
+Official Contact:
+
+* Website: informatics.wu.ac.th
+* Admissions: entry.wu.ac.th
+* Facebook: School of Informatics, Walailak University
+

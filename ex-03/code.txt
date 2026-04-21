@@ -1,0 +1,259 @@
+Slide 34: Chunking
+------------------
+
+const text = ($json.text || "").replace(/\s+/g,' ').trim();
+
+const chunkSize = 1500;
+const overlap = 200;
+
+let chunks = [];
+
+for (let i = 0; i < text.length; i += (chunkSize - overlap)) {
+  chunks.push(text.slice(i, i + chunkSize));
+}
+
+return chunks.map((c, i) => ({
+  json: {
+    chunk: c,
+    chunk_id: i,
+    source: $('Read/Write Files from Disk').first().json.fileName || 'unknown'
+  }
+}));
+
+
+Slide 35: Clean
+---------------
+
+return $input.all().map(item => ({
+  json: {
+    ...item.json,
+    chunk: (item.json.chunk || "")
+      .replace(/\n/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+  }
+}));
+
+
+Slide 36: Embedding
+-------------------
+Bearer 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
+
+{
+  "model": "text-embedding-3-small",
+  "input":  {{$items("Chunk").map(item => item.json.chunk).toJsonString()}}
+}
+
+Slide 37: Reformat Data
+-----------------------
+const chunks = $('Chunk').all();
+
+return items.map((item, index) => {
+  return {
+    json: {
+      chunk_id: chunks[index].json.chunk_id,
+      text: chunks[index].json.chunk,
+      embedding: item.json.data[0].embedding
+    }
+  };
+});
+
+
+Slide 38: Data Restruction
+---------------------------
+function uuid() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+const points = items.map(item => {
+  const embedding = item.json.embedding || item.json.data?.[0]?.embedding;
+
+  if (!embedding || embedding.length !== 1536) {
+    throw new Error("Invalid embedding detected");
+  }
+
+  return {
+    id: uuid(),
+    vector: embedding,
+    payload: {
+      text: item.json.text
+    }
+  };
+});
+
+return [{ json: { points } }];
+
+
+Slide 39: Put to Qdrant
+-----------------------
+URL: http://qdrant:6333/collections/pdf_docs/points
+
+{{$json}}
+
+Slide 40: Create new Collection in QdranDB
+-------------------------------------------
+Start --> command promt
+
+curl -X PUT "http://localhost:6333/collections/pdf_docs" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "vectors": {
+      "size": 1536,
+      "distance": "Cosine"
+    }
+  }'
+
+Slide 41: Clear Old data in DB
+------------------------------
+Start --> command promt
+
+  curl -X POST "http://localhost:6333/collections/pdf_docs/points/delete" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filter": {}
+  }'
+
+
+
+Slide 44: Get Message and clean it
+----------------------------------
+return [{
+  json: {
+    question: $input.first().json.chatInput
+  }
+}];
+
+
+Slide 45: Input Embedding
+-------------------------
+
+{
+  "model": "text-embedding-3-small",
+  "input": "{{ $json.question }}"
+}
+
+
+Slide 46: Reformat Embedding
+----------------------------
+return [{
+  json: {
+    query: $node["get Question"].json.question,
+    embedding: $json.data[0].embedding
+  }
+}];
+
+Slide 47:Search Top-k in Qdrant
+--------------------------------
+URL: http://qdrant:6333/collections/pdf_docs/points/search
+
+{
+  "vector": [{{$json.embedding}}],
+  "limit": 15,
+  "with_payload": true
+}
+
+
+Slide 48: To reformat the response from Quadrant
+------------------------------------------------
+
+const items = $input.first().json.result;
+const query = $('get Question').first().json.question;
+const topk = 3;
+const threshold = 0.7;
+// Step 1: clean + sort
+const cleaned = items.map(item => {
+  const text = (item.payload?.text || '')
+    .replace(/[^\x00-\x7F]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return {
+    id: item.id,
+    score: item.score,
+    text
+  };
+}).sort((a, b) => b.score - a.score);
+
+// Step 2: build context (join all text)
+// const context = cleaned
+//   .map(item => item.text)
+//   .filter(t => t.length > 0)
+//   .join('\n\n');
+
+const context = cleaned
+  .filter(item => item.score > threshold)   // Step 1: filter by score
+  .slice(0, topk)                        // Step 2: take top 3
+  .map(item => item.text)             // Step 3: extract text
+  .join('\n\n');                      // Step 4: build context
+
+
+// Step 3: return prompt
+return [{
+  json: {
+    prompt: `You are a professional in green campus. Answer strictly based on the provided context.
+
+Context:
+${context}
+
+Question:
+${query}
+
+Instructions:
+- Use only the context
+- If answer not found, say "Not found in document"
+- Be concise and precise`
+  }
+}];
+
+------------------------------ 
+const rawPrompt = $json.prompt || "";
+
+// Step 1: remove problematic Unicode/control chars (optional)
+const cleaned = rawPrompt
+  .replace(/[^\x00-\x7F]/g, '')   // remove non-ASCII (optional)
+  .replace(/\r/g, '')             // remove carriage return
+
+// Step 2: escape for JSON (CRITICAL)
+const safePrompt = cleaned
+  .replace(/\n/g, '\\n')          // escape newline
+  .replace(/"/g, '\\"');          // escape quotes
+
+return [{
+  json: {
+    prompt: safePrompt
+  }
+}];
+
+
+Slide 49: Generate the Response
+-------------------------------
+URL: https://openrouter.ai/api/v1/chat/completions
+
+Bearer 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
+
+{
+  "model": "gpt-4o-mini",
+  "temperature": 0.3,
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an academic assistant that provides precise answers and generates concise, well-structured summaries based strictly on the given context. Do not add information outside the context."
+    },
+    {
+      "role": "user",
+      "content": "Based on the context below, provide:\n1) A concise answer\n2) A short summary (3-5 sentences)\n\nContext:\n{{ $json.prompt }}"
+    }
+  ]
+}
+
+
+Slide 50: Filter the response 
+-----------------------------
+
+return {
+  output: $input.first().json.choices[0].message.content
+}

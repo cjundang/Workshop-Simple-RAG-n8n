@@ -1,0 +1,19 @@
+## Overview
+    You are an agent designed for what purpose?
+## Objectives / Tasks
+    Given XXX and YYY by a user, what should the agent do?
+    Or define the workflow explicitly as bullet-point steps.
+## Tools
+    Describe the tools that the agent can use. For example:
+        * **blogPost** – Use this to create a blog post.
+## Instructions / Prompt Instruction
+    Explain how prompts for the agent should be written, including what to include or avoid. For example:
+    * Include elements such as: main character, background, style, mood/lighting, additional details
+    * Specify constraints or limitations in prompting
+## Output / Output Format
+Specify what the agent should return and how the output should be structured. For example:
+    * Return a single paragraph as …
+    * Avoid certain elements (e.g., unnecessary explanation)
+    * Use a specific tone or language style
+## Good Output Example / Example
+    Provide an example of a high-quality final output

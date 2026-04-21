@@ -1,0 +1,153 @@
+{
+  "name": "AI-Chat-v2",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -224,
+        -96
+      ],
+      "id": "edd2a363-f948-4f87-addd-7d182426a35b",
+      "name": "When chat message received",
+      "webhookId": "f6af37b1-809b-4438-b7d2-dade7e7dfe26"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=User Quesrion: {{ $('When chat message received').item.json.chatInput }}\n\nInformation about School of Informatics:\n{{ $json.AbousUS }}",
+        "options": {
+          "systemMessage": "=## Overview\n\nYou are the **“Information Science Academic Assistant”**, an intelligent customer support agent for the School of Informatics at Walailak University.\n\nYour primary mission is to assist, guide, and provide accurate information to prospective students, current students, and other stakeholders who are interested in academic programs, courses, admissions, and activities offered by the School of Informatics.\n\nIn cases where the requested information cannot be found in \n[{{ $json.AbousUS }}] , \nyou must clearly inform the user that the information is unavailable and recommend that they verify the details from the official website:\n**[http://informatics.wu.ac.th](http://informatics.wu.ac.th)**\n\nAvoid guessing or generating unverified information. Always prioritize accuracy and reliability in your responses.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        -96
+      ],
+      "id": "ef63f177-d961-4b82-ab7a-b2945833160a",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        144,
+        128
+      ],
+      "id": "90513806-3059-4e71-8263-92ca32950f6f",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        16,
+        128
+      ],
+      "id": "e1acc1d3-5459-429d-b1a0-75fa223897ec",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "b6ahKFxdwxpFlc1m",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "76c6fa04-0869-4dce-ae50-92e2d9a32b5c",
+              "name": "AbousUS",
+              "value": "## Overview: School of Informatics, Walailak University\nThe School of Informatics at Walailak University is a leading academic institution in Thailand dedicated to the fields of information technology, digital media, and communication. The school is recognized for its \"High-Tech, High-Touch\" approach, combining advanced technical infrastructure with a focus on practical, real-world applications. It aims to produce \"Smart Graduates\" who are ready to lead the global digital economy.\n------------------------------\n## 1. Undergraduate Programs: What You Will Study\nThe school offers 5 distinct Bachelor’s degree programs. Each curriculum is designed to meet specific industry needs:\n\n* Intelligent Information Technology (IIT)\n* Focus: Artificial Intelligence and Software Engineering.\n   * What you learn: You will dive deep into AI development, Machine Learning, and Big Data Analytics. The program covers how to build intelligent software, cloud computing solutions, and cybersecurity systems to protect digital assets. It is ideal for those who want to become Data Scientists or AI Engineers.\n* Interactive Multimedia, Animation, and Games (IMAG)\n* Focus: Digital Entertainment and Creative Technology.\n   * What you learn: This program blends art and technology. You will study 3D Modeling, character animation, and Game Development using industry-standard engines like Unity and Unreal. You also explore Virtual Reality (VR) and Augmented Reality (AR) to create immersive digital worlds.\n* Digital Content and Media (DCM)\n* Focus: Information Management and Creative Content.\n   * What you learn: You will study the lifecycle of digital information—from Content Creation (graphics, video, and web) to Digital Archiving and information architecture. It teaches you how to organize large amounts of digital data and present it effectively to users through various digital platforms.\n* Digital Communication Arts (CommArts)\n* Focus: Modern Media and Strategic Communication.\n   * What you learn: This is a digital-first approach to mass media. You will learn Digital Storytelling, online broadcasting, and Social Media Analytics. The course covers video production, digital PR, and media entrepreneurship, preparing you to be a content creator or a digital media manager.\n* Digital Medical Technology (DTM)\n* Focus: Healthcare Innovation and IT.\n   * What you learn: A specialized program focusing on Health Informatics. You will learn how to apply IT to the medical field, such as managing Electronic Health Records (EHR), developing medical imaging software, and using AI for clinical decision support.\n\n------------------------------\n## 2. Graduate Programs (Master’s & Doctoral)\n\n* Information Technology Management (MIT) - International Program: Focuses on high-level IT strategy, governance, and digital transformation for leadership roles.\n* Artificial Intelligence and Digital Media Innovation (AIM): A research-intensive program focusing on the development of new AI technologies and innovative digital media tools.\n\n------------------------------\n## 3. Student Admissions (Academic Year 2026)## Undergraduate Level (TCAS69)\n\n   1. Round 1: Portfolio (Oct 2025 – Jan 2026): For students with outstanding projects or activities in IT/Media.\n   2. Round 2: Quota (Mar – Apr 2026): For students in the 14 southern provinces or those from partner schools.\n   3. Round 3: Admission (May 2026): Centralized national selection based on standardized test scores.\n   4. Round 4: Direct Admission (Late May – Jun 2026): Direct application to the university for remaining seats.\n\n## Graduate Level\n\n* Application Period: Open until May 15, 2026.\n* Scholarships: Walailak University offers generous Full Scholarships (tuition + stipend) and Tuition Waivers for high-potential researchers in both Master's and Ph.D. programs.\n\n------------------------------\nOfficial Contact:\n\n* Website: informatics.wu.ac.th\n* Admissions: entry.wu.ac.th\n* Facebook: School of Informatics, Walailak University\n\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -16,
+        -96
+      ],
+      "id": "1b089ac4-634c-4e84-a2fd-4d343e4e2128",
+      "name": "AbousUS"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AbousUS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        []
+      ]
+    },
+    "AbousUS": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "badaba41-ae0c-4f51-9227-ce8a9e2e419c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c749cefae2d5a4c99cc0092308bce9ceb208b914c9879f21b34ed16e947a8e83"
+  },
+  "id": "ibHEQhjd5gvcsNF6",
+  "tags": []
+}

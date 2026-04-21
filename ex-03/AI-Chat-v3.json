@@ -1,0 +1,494 @@
+{
+  "name": "AI-Chat-2",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        80,
+        48
+      ],
+      "id": "057ea150-0194-4f9c-80fe-870a65ed0510",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/home/node/.n8n-files/pdfs/*.pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        320,
+        48
+      ],
+      "id": "2c3b777a-4f93-4589-91f5-7cdc5cb68550",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        544,
+        48
+      ],
+      "id": "e69ab9ce-4dd2-4c0c-a12f-f16e42a6b26e",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = ($json.text || \"\").replace(/\\s+/g,' ').trim();\n\nconst chunkSize = 1500;\nconst overlap = 200;\n\nlet chunks = [];\n\nfor (let i = 0; i < text.length; i += (chunkSize - overlap)) {\n  chunks.push(text.slice(i, i + chunkSize));\n}\n\nreturn chunks.map((c, i) => ({\n  json: {\n    chunk: c,\n    chunk_id: i,\n    source: $('Read/Write Files from Disk').first().json.fileName || 'unknown'\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        48
+      ],
+      "id": "90a098d0-70ce-4822-8c0d-41d3a9704c16",
+      "name": "Chunk"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/embeddings",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"text-embedding-3-small\",\n  \"input\":  {{$items(\"Chunk\").map(item => item.json.chunk).toJsonString()}}\n}\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        336,
+        272
+      ],
+      "id": "77f4dc28-ea61-4fd5-9e9c-3d509a1e1c4a",
+      "name": "Chunk Embedding"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => ({\n  json: {\n    ...item.json,\n    chunk: (item.json.chunk || \"\")\n      .replace(/\\n/g, \" \")\n      .replace(/\\s+/g, \" \")\n      .trim()\n  }\n}));\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        992,
+        48
+      ],
+      "id": "07310a4d-b56c-4fc7-889c-db9b8560c085",
+      "name": "Clean"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "http://qdrant:6333/collections/pdf_docs/points",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1024,
+        272
+      ],
+      "id": "03bec260-cb1f-4d8e-955c-042b22ce7cfc",
+      "name": "Put to QdranDB"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        80,
+        -368
+      ],
+      "id": "1ac0169a-567d-4117-8a5f-f7b7229ea286",
+      "name": "When chat message received",
+      "webhookId": "721381e3-ee97-4113-9c57-4c048bac05d8"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    query: $node[\"get Question\"].json.question,\n    embedding: $json.data[0].embedding\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        752,
+        -368
+      ],
+      "id": "3aba71f2-2d42-4463-8957-5648776949dd",
+      "name": "Format Embedding"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://qdrant:6333/collections/pdf_docs/points/search",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"vector\": [{{$json.embedding}}],\n  \"limit\": 15,\n  \"with_payload\": true\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        960,
+        -368
+      ],
+      "id": "351a3002-8c60-4172-8ec2-ee0575d170bc",
+      "name": "Search Top-K in Qdrant"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.first().json.result;\nconst query = $('get Question').first().json.question;\nconst topk = 3;\nconst threshold = 0.7;\n// Step 1: clean + sort\nconst cleaned = items.map(item => {\n  const text = (item.payload?.text || '')\n    .replace(/[^\\x00-\\x7F]/g, '')\n    .replace(/\\s+/g, ' ')\n    .trim();\n\n  return {\n    id: item.id,\n    score: item.score,\n    text\n  };\n}).sort((a, b) => b.score - a.score);\n\n// Step 2: build context (join all text)\n// const context = cleaned\n//   .map(item => item.text)\n//   .filter(t => t.length > 0)\n//   .join('\\n\\n');\n\nconst context = cleaned\n  .filter(item => item.score > threshold)   // Step 1: filter by score\n  .slice(0, topk)                        // Step 2: take top 3\n  .map(item => item.text)             // Step 3: extract text\n  .join('\\n\\n');                      // Step 4: build context\n\n\n// Step 3: return prompt\nreturn [{\n  json: {\n    prompt: `You are a professional in green campus. Answer strictly based on the provided context.\n\nContext:\n${context}\n\nQuestion:\n${query}\n\nInstructions:\n- Use only the context\n- If answer not found, say \"Not found in document\"\n- Be concise and precise`\n  }\n}];\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        -160
+      ],
+      "id": "1eb8fc29-d88b-431d-8c89-aea3d22b899c",
+      "name": "Generate Prompt"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawPrompt = $json.prompt || \"\";\n\n// Step 1: remove problematic Unicode/control chars (optional)\nconst cleaned = rawPrompt\n  .replace(/[^\\x00-\\x7F]/g, '')   // remove non-ASCII (optional)\n  .replace(/\\r/g, '')             // remove carriage return\n\n// Step 2: escape for JSON (CRITICAL)\nconst safePrompt = cleaned\n  .replace(/\\n/g, '\\\\n')          // escape newline\n  .replace(/\"/g, '\\\\\"');          // escape quotes\n\nreturn [{\n  json: {\n    prompt: safePrompt\n  }\n}];\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        -160
+      ],
+      "id": "e80912c2-9ad3-4777-a1eb-1a2cdf90ea94",
+      "name": "Remove Unicode"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"temperature\": 0.3,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are an academic assistant that provides precise answers and generates concise, well-structured summaries based strictly on the given context. Do not add information outside the context.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Based on the context below, provide:\\n1) A concise answer\\n2) A short summary (3-5 sentences)\\n\\nContext:\\n{{ $json.prompt }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        736,
+        -160
+      ],
+      "id": "31cc772f-d75d-4f99-85e7-d3c63447c413",
+      "name": "Generate Response"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  output: $input.first().json.choices[0].message.content\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        -160
+      ],
+      "id": "b6b855e7-ad3c-4ef6-b5e0-e40cedcb5dff",
+      "name": "Filter the response"
+    },
+    {
+      "parameters": {
+        "jsCode": "const chunks = $('Chunk').all();\n\nreturn items.map((item, index) => {\n  return {\n    json: {\n      chunk_id: chunks[index].json.chunk_id,\n      text: chunks[index].json.chunk,\n      embedding: item.json.data[0].embedding\n    }\n  };\n});\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        272
+      ],
+      "id": "ccc6adb7-0c4c-414b-82d8-a4ff6af30e8d",
+      "name": "PrepareData"
+    },
+    {
+      "parameters": {
+        "jsCode": "function uuid() {\n  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {\n    const r = Math.random() * 16 | 0;\n    const v = c === 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n  });\n}\n\nconst points = items.map(item => {\n  const embedding = item.json.embedding || item.json.data?.[0]?.embedding;\n\n  if (!embedding || embedding.length !== 1536) {\n    throw new Error(\"Invalid embedding detected\");\n  }\n\n  return {\n    id: uuid(),\n    vector: embedding,\n    payload: {\n      text: item.json.text\n    }\n  };\n});\n\nreturn [{ json: { points } }];\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        272
+      ],
+      "id": "f55e8e5f-6865-4549-aec7-160affa92e58",
+      "name": "Data Restruction"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    question: $input.first().json.chatInput\n  }\n}];\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        -368
+      ],
+      "id": "16692edd-c38b-4cd4-8346-f9acecee6a9f",
+      "name": "get Question"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/embeddings",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"text-embedding-3-small\",\n  \"input\": \"{{ $json.question }}\"\n}\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        544,
+        -368
+      ],
+      "id": "99043344-0b4e-49c3-a959-2978fdcc5e78",
+      "name": "Question Embedding"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Chunk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunk": {
+      "main": [
+        [
+          {
+            "node": "Clean",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean": {
+      "main": [
+        [
+          {
+            "node": "Chunk Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunk Embedding": {
+      "main": [
+        [
+          {
+            "node": "PrepareData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "get Question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Embedding": {
+      "main": [
+        [
+          {
+            "node": "Search Top-K in Qdrant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Top-K in Qdrant": {
+      "main": [
+        [
+          {
+            "node": "Generate Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Prompt": {
+      "main": [
+        [
+          {
+            "node": "Remove Unicode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Unicode": {
+      "main": [
+        [
+          {
+            "node": "Generate Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Response": {
+      "main": [
+        [
+          {
+            "node": "Filter the response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareData": {
+      "main": [
+        [
+          {
+            "node": "Data Restruction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Restruction": {
+      "main": [
+        [
+          {
+            "node": "Put to QdranDB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get Question": {
+      "main": [
+        [
+          {
+            "node": "Question Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Question Embedding": {
+      "main": [
+        [
+          {
+            "node": "Format Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "e10a32f9-5618-45ea-9ec0-0d561e118870",
+  "meta": {
+    "instanceId": "a5f88c1da61052f9430e01856678ff5ead16c293059d5e6da663720adc4e9f44"
+  },
+  "id": "fpDrgucYdgG2ano7",
+  "tags": []
+}
